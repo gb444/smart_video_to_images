@@ -6,7 +6,7 @@ target_frames = 300
 target_resolution = (1920,1080)
 output_dir = 'output'
 extension='png'
-
+ASPECT_MARGIN = 0.05
 
 def video_to_images(input_path, target_frames, target_resolution, output_dir, extension='png', sg=None):
   cap = cv2.VideoCapture(input_path)
@@ -18,6 +18,18 @@ def video_to_images(input_path, target_frames, target_resolution, output_dir, ex
   needs_resize = target_resolution is not None and (cap_w, cap_h) != target_resolution and (cap_h, cap_w) != target_resolution
   if needs_resize:
       print(f"This file will be resized to {target_resolution[0]}, {target_resolution[1]}")
+      aspect_in = float(cap_w)/cap_h
+      aspect_out = float(target_resolution[0])/target_resolution[1]
+      aspect_mismatch = abs(aspect_in - aspect_out) > ASPECT_MARGIN
+      flipped_aspect_mismatch = abs(aspect_in - (1/aspect_out)) > ASPECT_MARGIN
+
+      if aspect_mismatch and flipped_aspect_mismatch:
+        print(f"Warning: the aspect ratios do not match!")
+        if sg:
+          sg.popup_error("Warning: the aspect ratios do not match!")
+      elif aspect_mismatch:
+        target_resolution = tuple(reversed(target_resolution))
+        print("Flipping asked resolution to match source aspect")
   elif cap_w != target_resolution:
       print("Image dimensions match with rotation, not resizing")
   frame_skip = math.floor(frame_count/target_frames)
